@@ -1,5 +1,6 @@
 import { runMirror } from "@/lib/agent";
 import { getProduct, lineOf } from "@/lib/catalog";
+import { parseBox } from "@/lib/face-box";
 import { faceCrop, inspect, loadImage, normalizeSelfie, thumb } from "@/lib/pixels";
 import { publicUrl } from "@/lib/safe-url";
 import { createYouCam } from "@/lib/youcam";
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
   const file = form.get("selfie");
   const product = readProduct(String(form.get("product") ?? ""));
   if (!(file instanceof File) || !product) return Response.json({ error: "Send a selfie and a product." }, { status: 400 });
+  const box = parseBox(String(form.get("face") ?? "null"));
   let previous = null;
   try { previous = JSON.parse(String(form.get("previous") ?? "null")); } catch {}
 
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
   const selfie = await normalizeSelfie(Buffer.from(await file.arrayBuffer()));
-  const events = runMirror({ selfie, product, previous }, { youcam, inspect, thumb, loadImage: (u) => loadImage(u), faceCrop, catalogLine: lineOf });
+  const events = runMirror({ selfie, product, previous, zoom: !!box && box.w < 0.6 }, { youcam, inspect, thumb, loadImage: (u) => loadImage(u), faceCrop: (b) => faceCrop(b, box), catalogLine: lineOf });
 
   const enc = new TextEncoder();
   const stream = new ReadableStream({

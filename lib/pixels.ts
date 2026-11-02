@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { cropAround, type Box } from "@/lib/face-box";
 import { sharpness } from "@/lib/check";
 import { rgbToHex } from "@/lib/color";
 
@@ -48,9 +49,13 @@ export async function loadImage(url: string, f: typeof fetch = fetch): Promise<B
   return Buffer.from(await res.arrayBuffer());
 }
 
-/** Head-and-shoulders crop of a waist-up photo (top 45%, centre 64%), so the face is big enough for skin scans. */
-export async function faceCrop(buf: Buffer): Promise<Buffer> {
+/** Crop that makes the face big enough for skin scans: around the detected face, or the head-and-shoulders area of a waist-up photo (top 45%, centre 64%). */
+export async function faceCrop(buf: Buffer, box?: Box | null): Promise<Buffer> {
   const { width = 0, height = 0 } = await sharp(buf).metadata();
+  if (box) {
+    const r = cropAround(box, width, height);
+    return sharp(buf).extract(r).resize({ width: Math.max(768, r.width) }).jpeg({ quality: 92 }).toBuffer();
+  }
   const w = Math.round(width * 0.64), h = Math.round(height * 0.45);
   return sharp(buf).extract({ left: Math.round((width - w) / 2), top: 0, width: w, height: h }).jpeg({ quality: 92 }).toBuffer();
 }

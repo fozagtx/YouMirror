@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { HISTORY, type Scan } from "@/components/SkinHistory";
 import type { AgentEvent, StepId, Tone, TryOn } from "@/lib/agent";
+import { detectFace } from "@/lib/detect-face";
+import type { Box } from "@/lib/face-box";
 import type { SkinSummary } from "@/lib/skin";
 import type { Product } from "@/lib/types";
 import type { Verdict } from "@/lib/verdict";
@@ -39,7 +41,7 @@ function MirrorFor({ productId }: { productId: string | null }) {
   const video = useRef<HTMLVideoElement>(null);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<{ blob: Blob; url: string; w: number; h: number } | null>(null);
+  const [photo, setPhoto] = useState<{ blob: Blob; url: string; w: number; h: number; face?: Box | null } | null>(null);
 
   const [steps, setSteps] = useState<Record<string, StepState>>({});
   const [running, setRunning] = useState(false);
@@ -99,7 +101,10 @@ function MirrorFor({ productId }: { productId: string | null }) {
   function takePhoto(blob: Blob) {
     const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => setPhoto({ blob, url, w: img.naturalWidth, h: img.naturalHeight });
+    img.onload = () => {
+      setPhoto({ blob, url, w: img.naturalWidth, h: img.naturalHeight });
+      detectFace(img).then((face) => setPhoto((p) => (p?.url === url ? { ...p, face } : p)));
+    };
     img.src = url;
     setResult(null);
   }
@@ -113,6 +118,7 @@ function MirrorFor({ productId }: { productId: string | null }) {
     const fd = new FormData();
     fd.append("selfie", photo.blob, "selfie.jpg");
     fd.append("product", JSON.stringify(product));
+    fd.append("face", JSON.stringify(photo.face ?? null));
     fd.append("previous", localStorage.getItem(LAST_SCAN) ?? "null");
     try {
       const res = await fetch("/api/mirror", { method: "POST", body: fd });
@@ -201,6 +207,7 @@ function MirrorFor({ productId }: { productId: string | null }) {
             <label className="btn">Upload photo<input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && takePhoto(e.target.files[0])} /></label>
           </div>
           {camError && <p className="warn">{camError}</p>}
+          {photo && !tooSmall && photo.face && photo.face.w < 0.4 && <p className="ok">Your face is small in this photo, so the mirror will zoom in on it for the skin scan.</p>}
           {photo && <p className={tooSmall ? "warn" : "ok"}>{tooSmall ? `Photo is ${photo.w}×${photo.h}. It needs at least 480px on the short side, so it won't use any units.` : `${photo.w}×${photo.h} photo ready. Sharpness and lighting are checked before any units are used.`}</p>}
         </div>
       </section>

@@ -106,6 +106,43 @@ describe("runMirror", () => {
     expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-analysis", "selfie"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
   });
 
+  it("retries the tone check on a face crop for makeup too", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps();
+    const run = d.youcam.run;
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    d.youcam.run = (async (f: string, body: Record<string, unknown>) => {
+      if (body.src_file_id === "skin-tone-analysis:selfie") throw new YouCamError("The face in the input image is too small.", "error_face_position_too_small");
+      return run(f, body);
+    }) as typeof run;
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0] }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+  });
+
+  it("zooms in on a small face before the tone check instead of waiting for a rejection", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps();
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0], zoom: true }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads.slice(0, 3)).toEqual([["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+  });
+
+  it("retries on a face crop when an off-centre face is read as turned away", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps();
+    const run = d.youcam.run;
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    d.youcam.run = (async (f: string, body: Record<string, unknown>) => {
+      if (body.src_file_id === "skin-tone-analysis:selfie") throw new YouCamError("The face is turned too far to the left.", "error_face_angle_leftward");
+      return run(f, body);
+    }) as typeof run;
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0] }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads[1]).toEqual(["skin-tone-analysis", "face"]);
+  });
+
   it("uses the cloth API with the garment image for garments", async () => {
     const { d, runs } = deps({ catalogLine: () => [] });
     const g: Product = { id: "g", kind: "garment", brand: "", name: "Shirt", line: "g", shade: null, hex: "#1f3a5f", image: "https://shop/shirt.jpg" };

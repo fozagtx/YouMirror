@@ -48,10 +48,11 @@ export function effectFor(p: Product, coverage: number) {
   return [{ category: "foundation", palettes: [{ color: p.hex, colorIntensity: 60, glowIntensity: 15, coverageIntensity: coverage }] }];
 }
 
-const tooSmall = (e: unknown) => /too_small|too small/i.test(`${(e as YouCamError).code ?? ""} ${(e as Error).message ?? ""}`);
+// Off-centre or far-away faces come back as "too small" or "turned away"; a crop around the face fixes both.
+const framing = (e: unknown) => /too_small|too small|angle/i.test(`${(e as YouCamError).code ?? ""} ${(e as Error).message ?? ""}`);
 
 export async function* runMirror(
-  input: { selfie: Img; product: Product; previous?: Pick<SkinSummary, "scores"> | null },
+  input: { selfie: Img; product: Product; previous?: Pick<SkinSummary, "scores"> | null; zoom?: boolean },
   d: AgentDeps,
 ): AsyncGenerator<AgentEvent> {
   const { selfie, product } = input;
@@ -62,18 +63,18 @@ export async function* runMirror(
   if (problems.length) return yield { type: "error", step: "photo", message: problems.join(" ") };
   yield step("photo", "done", "Photo is sharp and big enough");
 
-  let face = selfie;
   yield step("tone", "running", "Measuring your skin tone");
+  let face = input.zoom ? await d.faceCrop(selfie) : selfie;
   let tone: Tone;
   try {
     type ToneResult = { color: Record<string, string>; face_quality?: FaceQuality };
     const measure = async (img: Img) => d.youcam.run<ToneResult>("skin-tone-analysis", { src_file_id: await d.youcam.upload("skin-tone-analysis", img, "image/jpeg") });
     let r: ToneResult;
     try {
-      r = await measure(selfie);
+      r = await measure(face);
     } catch (e) {
-      // Waist-up garment photos: retry on a head-and-shoulders crop (failed tasks cost no units).
-      if (product.kind !== "garment" || !tooSmall(e)) throw e;
+      // Wide or waist-up photos: retry on a crop around the face (failed tasks cost no units).
+      if (face !== selfie || !framing(e)) throw e;
       face = await d.faceCrop(selfie);
       r = await measure(face);
     }
@@ -98,7 +99,7 @@ export async function* runMirror(
       r = await scan(face);
     } catch (e) {
       // Skin Analysis wants the face across 60% of the frame; retry on a face crop (failed tasks cost no units).
-      if (face !== selfie || !tooSmall(e)) throw e;
+      if (face !== selfie || !framing(e)) throw e;
       face = await d.faceCrop(selfie);
       r = await scan(face);
     }
