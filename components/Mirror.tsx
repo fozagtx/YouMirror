@@ -26,8 +26,11 @@ type Result = { verdict: Verdict; tone: Tone; skin: SkinSummary; tryOns: TryOn[]
 const title = (p: Product) => [p.brand, p.name].filter(Boolean).join(" ");
 
 export default function Mirror() {
-  const params = useSearchParams();
-  const productId = params.get("product");
+  const productId = useSearchParams().get("product");
+  return <MirrorFor key={productId ?? "none"} productId={productId} />;
+}
+
+function MirrorFor({ productId }: { productId: string | null }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [shades, setShades] = useState<Product[]>([]);
   const [link, setLink] = useState("");
@@ -54,6 +57,8 @@ export default function Mirror() {
   function pick(p: Product) {
     setProduct(p);
     setResult(null);
+    setSteps({});
+    setError(null);
   }
 
   async function importLink() {

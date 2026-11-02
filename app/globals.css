@@ -113,6 +113,54 @@ input.search, .linkrow input { padding: 10px 2px; min-width: 260px; border: 0; b
 .big-warn { font-size: 16px; padding: 18px 0; }
 .ask { display: flex; align-items: center; gap: 18px; padding: 36px 0; margin-top: 36px; border-top: 1px solid var(--line); color: var(--soft); }
 
+.agent { padding: 12px 0 36px; }
+.track { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--ink); }
+.track li { position: relative; padding: 18px 14px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--soft); }
+.track .dot { position: absolute; top: -6px; left: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--paper); border: 1px solid var(--ink); }
+.track b { color: var(--ink); font-weight: 600; font-size: 14px; }
+.track em { font-style: normal; color: var(--amber); }
+.track .running .dot { background: var(--amber); border-color: var(--amber); animation: pulse 1s infinite; }
+.track .done .dot { background: var(--ink); }
+.track .warn .dot { background: var(--amber); border-color: var(--amber); }
+.track .error .dot { background: var(--red); border-color: var(--red); }
+.track .error span { color: var(--red); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+.verdict { padding: 36px 0; }
+.call { padding: 32px 0 28px; border-top: 1px solid var(--ink); }
+.stamp { font-family: var(--serif); font-size: clamp(56px, 8vw, 104px); line-height: 1; letter-spacing: -0.02em; }
+.call.buy .stamp { color: var(--green); }
+.call.skip .stamp { color: var(--red); }
+.call.swap .stamp { color: var(--amber); font-style: italic; }
+.headline { font-size: 20px; margin-top: 10px; }
+.reasons { margin-top: 16px; padding-left: 18px; max-width: 760px; color: var(--soft); }
+.reasons li + li { margin-top: 6px; }
+
+.tryons { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 300px)); gap: 18px; margin-top: 12px; }
+.tryons figure { background: var(--card); border: 1px solid var(--line); }
+.tryons figure.picked { border-color: var(--ink); }
+.tryons img, .noimg { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.noimg { display: grid; place-items: center; padding: 22px; text-align: center; color: var(--red); background: #efe7dc; font-size: 14px; }
+figcaption { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 14px; font-size: 13px; }
+figcaption b { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 400; color: var(--soft); }
+figcaption span { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+figcaption i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+figcaption a { color: var(--ink); font-size: 13px; }
+
+.skin { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line); }
+.scores { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--line); }
+.scores li { display: flex; align-items: baseline; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); text-transform: capitalize; }
+.scores span { flex: 1; color: var(--soft); }
+.scores b { font-family: var(--serif); font-size: 28px; font-weight: 400; }
+.scores em { font-style: normal; font-family: var(--mono); font-size: 11px; margin-right: 12px; }
+.scores .low b { color: var(--red); }
+.fine { margin-top: 10px; color: var(--soft); text-transform: none; letter-spacing: 0; }
+.care { padding: 20px; background: var(--ink); color: var(--paper); }
+.care .eyebrow { color: #c9bfb2; }
+.care ul { padding-left: 18px; }
+.care li + li { margin-top: 8px; }
+
+
 .history { width: 100%; border-collapse: collapse; font-size: 14px; }
 .history th { text-align: left; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--soft); padding: 10px 8px; border-bottom: 1px solid var(--ink); }
 .history td { padding: 12px 8px; border-bottom: 1px solid var(--line); }
