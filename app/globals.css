@@ -148,7 +148,7 @@ figcaption i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 
 figcaption a { color: var(--ink); font-size: 13px; }
 
 .skin { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line); }
-.scores { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--line); }
+.scores { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 36px; border-top: 1px solid var(--line); }
 .scores li { display: flex; align-items: baseline; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); text-transform: capitalize; }
 .scores span { flex: 1; color: var(--soft); }
 .scores b { font-family: var(--serif); font-size: 28px; font-weight: 400; }

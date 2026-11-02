@@ -92,6 +92,20 @@ describe("runMirror", () => {
     expect(uploads).toEqual([["skin-tone-analysis", "selfie"], ["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["cloth", "selfie"]]);
   });
 
+  it("retries the skin scan on a face crop when the face fills too little of the photo", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps();
+    const run = d.youcam.run;
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    d.youcam.run = (async (f: string, body: Record<string, unknown>) => {
+      if (body.src_file_id === "skin-analysis:selfie") throw new YouCamError("The face in the input image is too small.", "error_src_face_too_small");
+      return run(f, body);
+    }) as typeof run;
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0] }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-analysis", "selfie"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+  });
+
   it("uses the cloth API with the garment image for garments", async () => {
     const { d, runs } = deps({ catalogLine: () => [] });
     const g: Product = { id: "g", kind: "garment", brand: "", name: "Shirt", line: "g", shade: null, hex: "#1f3a5f", image: "https://shop/shirt.jpg" };

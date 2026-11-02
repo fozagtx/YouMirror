@@ -48,6 +48,8 @@ export function effectFor(p: Product, coverage: number) {
   return [{ category: "foundation", palettes: [{ color: p.hex, colorIntensity: 60, glowIntensity: 15, coverageIntensity: coverage }] }];
 }
 
+const tooSmall = (e: unknown) => /too_small|too small/i.test(`${(e as YouCamError).code ?? ""} ${(e as Error).message ?? ""}`);
+
 export async function* runMirror(
   input: { selfie: Img; product: Product; previous?: Pick<SkinSummary, "scores"> | null },
   d: AgentDeps,
@@ -71,7 +73,7 @@ export async function* runMirror(
       r = await measure(selfie);
     } catch (e) {
       // Waist-up garment photos: retry on a head-and-shoulders crop (failed tasks cost no units).
-      if (product.kind !== "garment" || !/too_small/.test((e as YouCamError).code ?? "")) throw e;
+      if (product.kind !== "garment" || !tooSmall(e)) throw e;
       face = await d.faceCrop(selfie);
       r = await measure(face);
     }
@@ -89,8 +91,17 @@ export async function* runMirror(
   yield step("skin", "running", "Scanning today's skin");
   let skin: SkinSummary;
   try {
-    const id = await d.youcam.upload("skin-analysis", face, "image/jpeg");
-    const r = await d.youcam.run<{ output?: SkinOutput[] } | SkinOutput[]>("skin-analysis", { src_file_id: id, dst_actions: [...SKIN_ACTIONS], format: "json" });
+    type SkinResult = { output?: SkinOutput[] } | SkinOutput[];
+    const scan = async (img: Img) => d.youcam.run<SkinResult>("skin-analysis", { src_file_id: await d.youcam.upload("skin-analysis", img, "image/jpeg"), dst_actions: [...SKIN_ACTIONS], format: "json" });
+    let r: SkinResult;
+    try {
+      r = await scan(face);
+    } catch (e) {
+      // Skin Analysis wants the face across 60% of the frame; retry on a face crop (failed tasks cost no units).
+      if (face !== selfie || !tooSmall(e)) throw e;
+      face = await d.faceCrop(selfie);
+      r = await scan(face);
+    }
     skin = summarizeSkin(Array.isArray(r) ? r : r.output ?? [], input.previous);
   } catch (e) {
     return yield { type: "error", step: "skin", message: (e as Error).message };
