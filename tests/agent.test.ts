@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runMirror, type AgentEvent, type AgentDeps } from "@/lib/agent";
+import { YouCamError } from "@/lib/youcam";
 import type { Product } from "@/lib/types";
 
 const fnd = (hex: string, id: string): Product => ({ id, kind: "foundation", brand: "B", name: "Base", line: "b", shade: id, hex });
@@ -21,6 +22,7 @@ function deps(over: Partial<AgentDeps> = {}, faceQuality = { has_face: true, are
     inspect: async () => ({ width: 1080, height: 1440, bytes: 1000, sharpness: 40 }),
     thumb: async (src) => new Uint8Array(30).fill((src as unknown) === "selfie" ? 0 : 200),
     loadImage: async (url) => url as unknown as Buffer,
+    faceCrop: async () => "face" as unknown as Buffer,
     catalogLine: () => line,
     ...over,
   };
@@ -59,13 +61,35 @@ describe("runMirror", () => {
     expect(runs.map((r) => r.feature)).toEqual(["skin-tone-analysis"]);
   });
 
-  it("retries a try-on that handed back the original, then says so honestly", async () => {
-    const { d, runs } = deps({ thumb: async () => new Uint8Array(30).fill(0) });
-    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[1] }, d));
+  it("retries a garment try-on that handed back the original, then says so honestly", async () => {
+    const { d, runs } = deps({ thumb: async () => new Uint8Array(30).fill(0), catalogLine: () => [] });
+    const g: Product = { id: "g", kind: "garment", brand: "", name: "Shirt", line: "g", shade: null, hex: "#1f3a5f", image: "https://shop/shirt.jpg" };
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: g }, d));
     const result = ev.find((e) => e.type === "result") as Extract<AgentEvent, { type: "result" }>;
-    expect(runs.filter((r) => r.feature === "makeup-vto")).toHaveLength(2);
+    expect(runs.filter((r) => r.feature === "cloth")).toHaveLength(2);
     expect(result.tryOns[0].unchanged).toBe(true);
     expect(ev.some((e) => e.type === "step" && /unchanged/i.test(e.detail ?? ""))).toBe(true);
+  });
+
+  it("does not spend a retry on a subtle makeup shade", async () => {
+    const { d, runs } = deps({ thumb: async () => new Uint8Array(30).fill(0) });
+    await collect(runMirror({ selfie: "selfie" as never, product: line[1] }, d));
+    expect(runs.filter((r) => r.feature === "makeup-vto")).toHaveLength(1);
+  });
+
+  it("falls back to a face crop when a waist-up photo's face is too small", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps({ catalogLine: () => [] });
+    const run = d.youcam.run;
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    d.youcam.run = (async (f: string, body: Record<string, unknown>) => {
+      if (body.src_file_id === "skin-tone-analysis:selfie") throw new YouCamError("The face in the input image is too small.", "error_face_position_too_small");
+      return run(f, body);
+    }) as typeof run;
+    const g: Product = { id: "g", kind: "garment", brand: "", name: "Shirt", line: "g", shade: null, hex: "#1f3a5f", image: "https://shop/shirt.jpg" };
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: g }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads).toEqual([["skin-tone-analysis", "selfie"], ["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["cloth", "selfie"]]);
   });
 
   it("uses the cloth API with the garment image for garments", async () => {

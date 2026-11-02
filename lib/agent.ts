@@ -3,6 +3,7 @@ import { undertone } from "@/lib/color";
 import { SKIN_ACTIONS, summarizeSkin, type SkinSummary } from "@/lib/skin";
 import type { Product, SkinOutput } from "@/lib/types";
 import { decide, type Verdict } from "@/lib/verdict";
+import type { YouCamError } from "@/lib/youcam";
 
 export type StepId = "photo" | "tone" | "skin" | "tryon" | "compare" | "verdict";
 export type TryOn = { product: Product; url: string | null; unchanged: boolean; error?: string };
@@ -20,6 +21,7 @@ export type AgentDeps = {
   inspect: (buf: Img) => Promise<{ width: number; height: number; bytes: number; sharpness: number }>;
   thumb: (buf: Img) => Promise<Uint8Array>;
   loadImage: (url: string) => Promise<Img>;
+  faceCrop: (buf: Img) => Promise<Img>;
   catalogLine: (p: Product) => Product[];
 };
 
@@ -32,8 +34,12 @@ const FACE_FIX: Record<string, string> = {
   faceangle: "Keep your head level and look straight at the camera.",
 };
 
-/** Under this share of changed pixels the try-on is treated as the original photo handed back. */
-const UNCHANGED_BELOW = 0.003;
+/**
+ * Under this share of clearly changed pixels a garment try-on is the original photo handed back.
+ * YouCam re-renders the whole frame (a small global colour shift), and a real garment swap
+ * repaints far more than 2% of it. Makeup is not checked: a subtle shade is a real result.
+ */
+const UNCHANGED_BELOW = 0.02;
 
 export function effectFor(p: Product, coverage: number) {
   if (p.kind === "lipstick") {
@@ -54,11 +60,21 @@ export async function* runMirror(
   if (problems.length) return yield { type: "error", step: "photo", message: problems.join(" ") };
   yield step("photo", "done", "Photo is sharp and big enough");
 
+  let face = selfie;
   yield step("tone", "running", "Measuring your skin tone");
   let tone: Tone;
   try {
-    const id = await d.youcam.upload("skin-tone-analysis", selfie, "image/jpeg");
-    const r = await d.youcam.run<{ color: Record<string, string>; face_quality?: FaceQuality }>("skin-tone-analysis", { src_file_id: id });
+    type ToneResult = { color: Record<string, string>; face_quality?: FaceQuality };
+    const measure = async (img: Img) => d.youcam.run<ToneResult>("skin-tone-analysis", { src_file_id: await d.youcam.upload("skin-tone-analysis", img, "image/jpeg") });
+    let r: ToneResult;
+    try {
+      r = await measure(selfie);
+    } catch (e) {
+      // Waist-up garment photos: retry on a head-and-shoulders crop (failed tasks cost no units).
+      if (product.kind !== "garment" || !/too_small/.test((e as YouCamError).code ?? "")) throw e;
+      face = await d.faceCrop(selfie);
+      r = await measure(face);
+    }
     const fq = r.face_quality ?? {};
     if (fq.has_face === false) return yield { type: "error", step: "tone", message: "No face found. Face the camera in good light." };
     const bad = (Object.keys(FACE_FIX) as (keyof typeof FACE_FIX)[]).filter((k) => fq[k as keyof FaceQuality] && fq[k as keyof FaceQuality] !== "good");
@@ -73,7 +89,7 @@ export async function* runMirror(
   yield step("skin", "running", "Scanning today's skin");
   let skin: SkinSummary;
   try {
-    const id = await d.youcam.upload("skin-analysis", selfie, "image/jpeg");
+    const id = await d.youcam.upload("skin-analysis", face, "image/jpeg");
     const r = await d.youcam.run<{ output?: SkinOutput[] } | SkinOutput[]>("skin-analysis", { src_file_id: id, dst_actions: [...SKIN_ACTIONS], format: "json" });
     skin = summarizeSkin(Array.isArray(r) ? r : r.output ?? [], input.previous);
   } catch (e) {
@@ -93,6 +109,10 @@ export async function* runMirror(
       ? { src_file_id: fileId, ref_file_url: p.image, garment_category: "auto" }
       : { src_file_id: fileId, effects: effectFor(p, verdict.tryOn.coverage) };
     let url = "";
+    if (p.kind !== "garment") {
+      url = (await d.youcam.run<{ url: string }>(feature, body)).url;
+      return { product: p, url, unchanged: false, retried: false };
+    }
     for (let attempt = 0; attempt < 2; attempt++) {
       url = (await d.youcam.run<{ url: string }>(feature, body)).url;
       const after = await d.thumb(await d.loadImage(url));
@@ -107,7 +127,7 @@ export async function* runMirror(
     const t = await tryOn(product);
     tryOns.push({ product: t.product, url: t.url, unchanged: t.unchanged });
     yield t.unchanged
-      ? step("tryon", "warn", "Try-on came back unchanged", "YouCam returned your original photo twice, so this try-on is unchanged. Judge by the scan, not the picture.")
+      ? step("tryon", "warn", "Try-on came back unchanged", "YouCam handed back your original photo twice, so this try-on is unchanged. Judge by the scan, not the picture.")
       : step("tryon", "done", t.retried ? "Try-on ready (first attempt came back unchanged, retried)" : "Try-on ready");
   } catch (e) {
     return yield { type: "error", step: "tryon", message: (e as Error).message };

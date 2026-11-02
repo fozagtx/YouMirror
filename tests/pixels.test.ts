@@ -26,6 +26,13 @@ describe("pixels", () => {
     expect(hex).toMatch(/^#1[e-f]3[9a-b]5[e-f]$/);
   });
 
+  it("ignores a grey studio backdrop around a model", async () => {
+    const shot = await sharp({ create: { width: 400, height: 400, channels: 3, background: { r: 212, g: 213, b: 216 } } })
+      .composite([{ input: await sharp({ create: { width: 140, height: 160, channels: 3, background: { r: 230, g: 170, b: 120 } } }).png().toBuffer(), top: 90, left: 130 }])
+      .png().toBuffer();
+    expect(await dominantColor(shot)).toMatch(/^#e[5-7]a[9-b]7[6-9]$/);
+  });
+
   it("shrinks big selfies to 1920px on the long side as JPEG", async () => {
     const out = await normalizeSelfie(await solid(3000, 4000, { r: 1, g: 2, b: 3 }));
     const m = await sharp(out).metadata();
