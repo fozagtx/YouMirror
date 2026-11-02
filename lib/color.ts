@@ -29,6 +29,18 @@ export function deltaE(a: string, b: string): number {
   return Math.hypot(p.L - q.L, p.a - q.a, p.b - q.b);
 }
 
+/**
+ * Shade distance for foundation matching: lightness and hue count fully, chroma at half weight
+ * (like CMC l:c = 1:2), because product swatches photograph more saturated than skin.
+ */
+export function shadeDistance(shade: string, skin: string): number {
+  const p = hexToLab(shade), q = hexToLab(skin);
+  const dL = p.L - q.L;
+  const dC = Math.hypot(p.a, p.b) - Math.hypot(q.a, q.b);
+  const dH2 = Math.max(0, (p.a - q.a) ** 2 + (p.b - q.b) ** 2 - dC ** 2);
+  return Math.sqrt(dL ** 2 + (dC / 2) ** 2 + dH2);
+}
+
 export function hueAngle(hex: string): number {
   const { a, b } = hexToLab(hex);
   const h = (Math.atan2(b, a) * 180) / Math.PI;

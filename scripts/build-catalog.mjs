@@ -46,7 +46,7 @@ for (const r of csv) {
     line,
     shade,
     hex: r.hex.toLowerCase(),
-    image: r.imgSrc && r.imgSrc !== "NA" ? r.imgSrc.replace(/\$\w+\$$/, "$tn$") : null,
+    image: r.imgSrc && r.imgSrc !== "NA" ? new URL(r.imgSrc.replace(/\$\w+\$$/, "$tn$"), r.url).toString() : null,
     url: r.url,
   });
 }

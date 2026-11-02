@@ -1,4 +1,4 @@
-import { compareShade, deltaE, hueAngle, round, undertone } from "@/lib/color";
+import { compareShade, deltaE, hueAngle, round, shadeDistance, undertone } from "@/lib/color";
 import type { SkinSummary } from "@/lib/skin";
 import type { Product } from "@/lib/types";
 
@@ -27,29 +27,34 @@ function dayNotes(skin: SkinSummary) {
   return { reasons, skincare: skin.concerns.map((c) => c.tip), coverage: skin.breakout ? 80 : 45 };
 }
 
+/** A pick within this many points of the best shade in its range counts as the best. */
+const SAME_AS_BEST = 2;
+/** If even the best shade in the range is further than this, the range doesn't carry your shade. */
+const RANGE_MISS = 20;
+
 function foundation({ product, skinHex, catalogLine }: Input) {
   const c = compareShade(product.hex!, skinHex);
-  if (c.direction === "match") {
-    return { verdict: "buy" as const, headline: "Buy it. This shade matches your skin today.", reasons: [`This shade is ${c.deltaE} ΔE from your measured tone ${skinHex}, close enough to disappear on skin.`], alternatives: [] };
-  }
+  const ranked = [product, ...catalogLine.filter((p) => p.id !== product.id && p.hex)]
+    .map((p) => ({ p, d: shadeDistance(p.hex!, skinHex) }))
+    .sort((a, b) => a.d - b.d);
+  const picked = shadeDistance(product.hex!, skinHex);
+  const best = ranked[0].d;
   const why =
     c.direction === "lighter" ? `This shade sits ${c.lightnessGap} points lighter than your measured tone ${skinHex}.`
     : c.direction === "darker" ? `This shade sits ${-c.lightnessGap} points darker than your measured tone ${skinHex}.`
-    : `This shade is the right depth but the wrong undertone for your ${undertone(skinHex)} skin (${c.deltaE} ΔE off).`;
-  const alternatives = catalogLine
-    .filter((p) => p.id !== product.id && p.hex)
-    .map((p) => ({ p, d: deltaE(p.hex!, skinHex) }))
-    .filter((x) => x.d < c.deltaE && x.d < 6)
-    .sort((a, b) => a.d - b.d)
-    .slice(0, 2)
-    .map((x) => x.p);
-  if (!alternatives.length) {
-    return { verdict: "skip" as const, headline: "Skip it. Nothing in this range matches you.", reasons: [why, `No other shade in ${product.brand} ${product.name} comes within 6 ΔE of your tone.`], alternatives };
+    : c.direction === "match" ? `This shade matches the depth of your measured tone ${skinHex}.`
+    : `This shade is the right depth but leans off your ${undertone(skinHex)} undertone.`;
+  if (best > RANGE_MISS) {
+    return { verdict: "skip" as const, headline: "Skip it. Nothing in this range matches you.", reasons: [why, `The closest shade in ${product.brand} ${product.name} is still ${round(best)} points off your tone.`], alternatives: [] };
   }
+  if (picked - best < SAME_AS_BEST) {
+    return { verdict: "buy" as const, headline: "Buy it. This is your shade in this range.", reasons: [why, `Out of ${ranked.length} shades in this range, this is the closest to your skin today (${round(picked)} points off).`], alternatives: [] };
+  }
+  const alternatives = ranked.filter((x) => x.p.id !== product.id && picked - x.d >= SAME_AS_BEST).slice(0, 2).map((x) => x.p);
   return {
     verdict: "swap" as const,
     headline: `Try ${alternatives[0].shade} instead.`,
-    reasons: [why, `Here ${alternatives.length === 1 ? "is the closest shade" : `are the ${alternatives.length} closest shades`} in the same range, both tried on you: ${alternatives.map((a) => `${a.shade} (${round(deltaE(a.hex!, skinHex))} ΔE)`).join(", ")}.`],
+    reasons: [why, `${alternatives.length === 1 ? "The closest shade" : `The ${alternatives.length} closest shades`} in the same range, tried on you: ${alternatives.map((a) => `${a.shade} (${round(shadeDistance(a.hex!, skinHex))} points off, yours is ${round(picked)})`).join("; ")}.`],
     alternatives,
   };
 }

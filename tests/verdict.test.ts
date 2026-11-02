@@ -50,3 +50,19 @@ describe("decide", () => {
     expect(decide({ product: { ...g, hex: "#1f3a5f" }, skinHex, skin: calm, catalogLine: [] }).verdict).toBe("buy");
   });
 });
+
+describe("decide on real swatch offsets", () => {
+  it("still swaps when every swatch is a little off but some are much closer than the pick", () => {
+    const skin = "#bc9c87";
+    const real = [fnd("#ffdec3", "100"), fnd("#c58d6a", "340"), fnd("#cd926b", "390"), fnd("#efb592", "260"), fnd("#5a3a28", "498")];
+    const v = decide({ product: real[0], skinHex: skin, skin: calm, catalogLine: real });
+    expect(v.verdict).toBe("swap");
+    expect(v.alternatives.map((a) => a.id)).toEqual(["340", "390"]);
+  });
+
+  it("buys the closest shade in a range even when the swatch is not identical to skin", () => {
+    const skin = "#bc9c87";
+    const real = [fnd("#ffdec3", "100"), fnd("#c58d6a", "340"), fnd("#cd926b", "390"), fnd("#5a3a28", "498")];
+    expect(decide({ product: real[1], skinHex: skin, skin: calm, catalogLine: real }).verdict).toBe("buy");
+  });
+});

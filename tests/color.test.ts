@@ -29,3 +29,14 @@ describe("color", () => {
     expect(undertone("#e8c4c4")).toBe("cool");
   });
 });
+
+describe("shadeDistance", () => {
+  it("forgives a swatch being more saturated than skin in a photo, but not a lightness gap", async () => {
+    const { shadeDistance } = await import("@/lib/color");
+    const skin = "#bc9c87";
+    const saturated = "#c3976f";
+    const lighter = "#d8b9a4";
+    expect(shadeDistance(saturated, skin)).toBeLessThan(deltaE(saturated, skin));
+    expect(shadeDistance(lighter, skin)).toBeGreaterThan(shadeDistance(saturated, skin));
+  });
+});
