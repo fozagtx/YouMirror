@@ -73,9 +73,10 @@ export async function* runMirror(
     try {
       r = await measure(face);
     } catch (e) {
-      // Wide or waist-up photos: retry on a crop around the face (failed tasks cost no units).
-      if (face !== selfie || !framing(e)) throw e;
-      face = await d.faceCrop(selfie);
+      // Framing rejections flip to the other framing: a crop for wide photos, the full photo when the crop is too tight
+      // (failed tasks cost no units).
+      if (!framing(e)) throw e;
+      face = face !== selfie ? selfie : await d.faceCrop(selfie);
       r = await measure(face);
     }
     const fq = r.face_quality ?? {};

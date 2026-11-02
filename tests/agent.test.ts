@@ -145,6 +145,20 @@ describe("runMirror", () => {
     expect(uploads[1]).toEqual(["skin-tone-analysis", "face"]);
   });
 
+  it("falls back to the full photo when a zoomed crop is read as turned away", async () => {
+    const uploads: Array<[string, unknown]> = [];
+    const { d } = deps();
+    const run = d.youcam.run;
+    d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
+    d.youcam.run = (async (f: string, body: Record<string, unknown>) => {
+      if (body.src_file_id === "skin-tone-analysis:face") throw new YouCamError("The face is turned too far to the left.", "error_face_angle_leftward");
+      return run(f, body);
+    }) as typeof run;
+    const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0], zoom: true }, d));
+    expect(ev.some((e) => e.type === "result")).toBe(true);
+    expect(uploads.slice(0, 2)).toEqual([["skin-tone-analysis", "face"], ["skin-tone-analysis", "selfie"]]);
+  });
+
   it("uses the cloth API with the garment image for garments", async () => {
     const { d, runs } = deps({ catalogLine: () => [] });
     const g: Product = { id: "g", kind: "garment", brand: "", name: "Shirt", line: "g", shade: null, hex: "#1f3a5f", image: "https://shop/shirt.jpg" };
