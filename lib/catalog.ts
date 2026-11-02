@@ -1,9 +1,14 @@
 import data from "@/data/catalog.json";
 import lineImages from "@/data/line-images.json";
+import shadeImages from "@/data/shade-images.json";
 import { deltaE } from "@/lib/color";
 import type { Kind, Product } from "@/lib/types";
 
-const catalog = data as Product[];
+const photos = lineImages as Record<string, string | null>;
+const packshots = shadeImages as Record<string, string>;
+// Raw catalog links are shade swatches and often broken. Each shade shows its own verified packshot
+// (scripts/build-packshots.mjs), else its line's verified photo (scripts/check-images.mjs).
+const catalog = (data as Product[]).map((p) => ({ ...p, image: packshots[p.id] ?? photos[`${p.kind}:${p.line}`] ?? null }));
 const byId = new Map(catalog.map((p) => [p.id, p]));
 const haystack = new Map(catalog.map((p) => [p.id, `${p.brand} ${p.name} ${p.shade ?? ""}`.toLowerCase()]));
 
@@ -44,7 +49,7 @@ const lines: Line[] = (() => {
   for (const p of catalog) {
     const key = `${p.kind}:${p.line}`;
     let l = map.get(key);
-    if (!l) map.set(key, (l = { id: p.id, kind: p.kind, brand: p.brand, name: p.name, image: (lineImages as Record<string, string | null>)[key] ?? null, price: p.price ?? null, shades: 0, swatches: [] }));
+    if (!l) map.set(key, (l = { id: p.id, kind: p.kind, brand: p.brand, name: p.name, image: packshots[p.id] ?? photos[key] ?? null, price: p.price ?? null, shades: 0, swatches: [] }));
     l.shades++;
     if (p.hex && l.swatches.length < 8) l.swatches.push(p.hex);
   }

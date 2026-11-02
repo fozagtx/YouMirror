@@ -8,7 +8,7 @@ export default function ProductView({ first, shades }: { first: Product; shades:
   const [p, setP] = useState(first);
   return (
     <section className="pdp">
-      <div className="pdp-img">{p.image && <img src={p.image} alt={p.shade ?? p.name} />}</div>
+      <div className="pdp-img">{p.image ? <img src={p.image} alt={p.shade ?? p.name} /> : <span className="swatch big" style={{ background: p.hex ?? "#ccc" }} />}</div>
       <div className="pdp-info">
         <p className="caps">{p.brand}</p>
         <h1 className="title">{p.name}</h1>

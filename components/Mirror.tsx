@@ -23,7 +23,7 @@ const VERDICT = { buy: "Buy it", skip: "Skip it", swap: "Try this instead" } as 
 const LAST_SCAN = "youmirror:last-scan";
 
 type StepState = { status: "pending" | "running" | "done" | "warn" | "error"; title?: string; detail?: string };
-type Result = { verdict: Verdict; tone: Tone; skin: SkinSummary; tryOns: TryOn[] };
+type Result = { verdict: Verdict; tone: Tone; skin: SkinSummary; tryOns: TryOn[]; photo?: string | null };
 
 const title = (p: Product) => [p.brand, p.name].filter(Boolean).join(" ");
 
@@ -163,7 +163,7 @@ function MirrorFor({ productId }: { productId: string | null }) {
           <p className="caps step">01 · The product</p>
           {product ? (
             <div className="chosen">
-              <div className="chosen-img">{product.image && <img src={product.image} alt="" />}</div>
+              <div className="chosen-img">{product.image ? <img src={product.image} alt="" /> : <span className="swatch" style={{ background: product.hex ?? "#ccc" }} />}</div>
               <div>
                 <p className="caps">{product.brand}</p>
                 <p className="chosen-name">{product.name}</p>
@@ -197,10 +197,14 @@ function MirrorFor({ productId }: { productId: string | null }) {
 
         <div className="panel">
           <p className="caps step">02 · You today</p>
-          <div className="glass">
-            <video ref={video} playsInline muted className={camOn ? "" : "hidden"} />
-            {!camOn && photo && <img src={photo.url} alt="Your selfie" />}
-            {!camOn && !photo && <div className="glass-empty"><button className="btn light" onClick={startCamera}>Open camera</button><p>Face the light, look straight in, no glasses.</p></div>}
+          <div className="frame">
+            <span className="frame-text" aria-hidden>Face the light · Look straight in · No glasses</span>
+            <i className="spark s1" aria-hidden>✦</i><i className="spark s2" aria-hidden>✦</i><i className="spark s3" aria-hidden>✦</i><i className="spark s4" aria-hidden>✦</i>
+            <div className="glass">
+              <video ref={video} playsInline muted className={camOn ? "" : "hidden"} />
+              {!camOn && photo && <img src={photo.url} alt="Your selfie" />}
+              {!camOn && !photo && <div className="glass-empty"><button className="btn light" onClick={startCamera}>Open camera</button><p>Face the light, look straight in, no glasses.</p></div>}
+            </div>
           </div>
           <div className="row">
             {camOn ? <button className="btn dark" onClick={capture}>Take selfie</button> : photo ? <button className="btn" onClick={startCamera}>Retake</button> : null}
@@ -239,7 +243,7 @@ function MirrorFor({ productId }: { productId: string | null }) {
 
       {error && !result && <p className="warn big-warn">{error}</p>}
 
-      {result && photo && <VerdictView result={result} selfie={photo.url} />}
+      {result && photo && <VerdictView result={result} selfie={result.photo ?? photo.url} />}
 
     </>
   );
@@ -256,18 +260,32 @@ function VerdictView({ result, selfie }: { result: Result; selfie: string }) {
         <ul className="reasons">{verdict.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
       </div>
 
-      <div className="tryons">
-        <figure>
-          <img src={selfie} alt="You today" />
-          <figcaption><b>You today</b><span><i style={{ background: tone.skinHex }} />Measured tone {tone.skinHex} · {tone.undertone}</span></figcaption>
+      <div className="looks">
+        <figure className="look you">
+          <div className="look-photo"><img src={selfie} alt="You today" /></div>
+          <figcaption>
+            <b>You today</b>
+            <span className="look-name">Measured tone</span>
+            <span className="look-shade"><i style={{ background: tone.skinHex }} />{tone.skinHex} · {tone.undertone} undertone</span>
+          </figcaption>
         </figure>
         {tryOns.map((t, i) => (
-          <figure key={t.product.id} className={i === 0 ? "picked" : "alt"}>
-            {t.url && !t.unchanged ? <img src={t.url} alt={`${t.product.shade ?? t.product.name} on you`} /> : <div className="noimg">{t.error ?? "YouCam handed back your original photo twice, so there is no honest try-on to show."}</div>}
+          <figure key={t.product.id} className={`look ${i === 0 ? "picked" : "alt"}`}>
+            <div className="look-photo">
+              {t.url && !t.unchanged ? <img src={t.url} alt={`${t.product.shade ?? t.product.name} on you`} /> : <div className="noimg">{t.error ?? "YouCam handed back your original photo twice, so there is no honest try-on to show."}</div>}
+              <div className="look-product">
+                {t.product.image ? <img src={t.product.image} alt={t.product.name} /> : <span className="swatch" style={{ background: t.product.hex ?? "#ccc" }} />}
+              </div>
+            </div>
             <figcaption>
               <b>{i === 0 ? "What you picked" : `Closer match ${i}`}</b>
-              <span>{t.product.hex && <i style={{ background: t.product.hex }} />}{t.product.shade ?? t.product.name}</span>
-              {t.product.url && <a href={t.product.url} target="_blank" rel="noreferrer">View product</a>}
+              {t.product.brand && <span className="caps">{t.product.brand}</span>}
+              <span className="look-name">{t.product.name}</span>
+              <span className="look-shade">{t.product.hex && <i style={{ background: t.product.hex }} />}{t.product.shade ?? ""}</span>
+              <span className="look-meta">
+                {t.product.price && t.product.price !== "$0.0" && <em>{t.product.price}</em>}
+                {t.product.url && <a href={t.product.url} target="_blank" rel="noreferrer">View product</a>}
+              </span>
             </figcaption>
           </figure>
         ))}

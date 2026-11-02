@@ -17,6 +17,19 @@ describe("catalog", () => {
     expect(alts.every((a) => a.line === current.line && a.id !== current.id)).toBe(true);
   });
 
+  it("shows each shade's own product packshot, so try-on cards show the exact product", async () => {
+    const { listLines } = await import("@/lib/catalog");
+    const shots = (await import("@/data/shade-images.json")).default as Record<string, string>;
+    const line = listLines("fenty pro filt soft matte powder", "foundation", 1)[0];
+    const shade = getProduct(line.id)!;
+    expect(shade.image).toBe(shots[shade.id]);
+    expect(shade.image).toMatch(/main-zoom\.jpg$/);
+    const alts = closestShades("#bc9d88", shade, 2);
+    expect(alts.map((a) => a.image)).toEqual(alts.map((a) => shots[a.id]));
+    expect(new Set([shade.image, ...alts.map((a) => a.image)]).size).toBe(3);
+    expect(line.image).toBe(shade.image);
+  });
+
   it("looks a product up by id", () => {
     const p = searchCatalog("colourpop", "lipstick")[0];
     expect(getProduct(p.id)?.id).toBe(p.id);

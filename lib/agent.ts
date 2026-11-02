@@ -11,7 +11,7 @@ export type Tone = { skinHex: string; undertone: string; eyeColor?: string; lipC
 
 export type AgentEvent =
   | { type: "step"; id: StepId; status: "running" | "done" | "warn"; title: string; detail?: string }
-  | { type: "result"; verdict: Verdict; tone: Tone; skin: SkinSummary; tryOns: TryOn[] }
+  | { type: "result"; verdict: Verdict; tone: Tone; skin: SkinSummary; tryOns: TryOn[]; photo?: string | null }
   | { type: "error"; step: StepId; message: string };
 
 type Img = Buffer;
@@ -115,8 +115,10 @@ export async function* runMirror(
   let before: Uint8Array | null = null;
 
   const tryOn = async (p: Product): Promise<TryOn & { retried: boolean }> => {
-    fileId ??= await d.youcam.upload(feature, selfie, "image/jpeg");
-    before ??= await d.thumb(selfie);
+    // Makeup goes on the zoomed face so the result is close enough to see; garments need the whole body.
+    const src = p.kind === "garment" ? selfie : face;
+    fileId ??= await d.youcam.upload(feature, src, "image/jpeg");
+    before ??= await d.thumb(src);
     const body = p.kind === "garment"
       ? { src_file_id: fileId, ref_file_url: p.image, garment_category: "auto" }
       : { src_file_id: fileId, effects: effectFor(p, verdict.tryOn.coverage) };
@@ -157,5 +159,6 @@ export async function* runMirror(
   yield step("compare", "done", verdict.alternatives.length ? `${verdict.alternatives.length} alternatives tried on` : "No swap needed");
 
   yield step("verdict", "done", verdict.headline);
-  yield { type: "result", verdict, tone, skin, tryOns };
+  const photo = face !== selfie && product.kind !== "garment" ? `data:image/jpeg;base64,${Buffer.from(face).toString("base64")}` : null;
+  yield { type: "result", verdict, tone, skin, tryOns, photo };
 }

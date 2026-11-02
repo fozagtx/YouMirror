@@ -103,7 +103,7 @@ describe("runMirror", () => {
     }) as typeof run;
     const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0] }, d));
     expect(ev.some((e) => e.type === "result")).toBe(true);
-    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-analysis", "selfie"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-analysis", "selfie"], ["skin-analysis", "face"], ["makeup-vto", "face"]]);
   });
 
   it("retries the tone check on a face crop for makeup too", async () => {
@@ -117,7 +117,7 @@ describe("runMirror", () => {
     }) as typeof run;
     const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0] }, d));
     expect(ev.some((e) => e.type === "result")).toBe(true);
-    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+    expect(uploads.slice(0, 4)).toEqual([["skin-tone-analysis", "selfie"], ["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "face"]]);
   });
 
   it("zooms in on a small face before the tone check instead of waiting for a rejection", async () => {
@@ -126,7 +126,9 @@ describe("runMirror", () => {
     d.youcam.upload = async (f, b) => { uploads.push([f, b]); return `${f}:${String(b)}`; };
     const ev = await collect(runMirror({ selfie: "selfie" as never, product: line[0], zoom: true }, d));
     expect(ev.some((e) => e.type === "result")).toBe(true);
-    expect(uploads.slice(0, 3)).toEqual([["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "selfie"]]);
+    expect(uploads.slice(0, 3)).toEqual([["skin-tone-analysis", "face"], ["skin-analysis", "face"], ["makeup-vto", "face"]]);
+    const res = ev.find((e) => e.type === "result");
+    expect(res && res.type === "result" && res.photo).toBe(`data:image/jpeg;base64,${Buffer.from("face").toString("base64")}`);
   });
 
   it("retries on a face crop when an off-centre face is read as turned away", async () => {
