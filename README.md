@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YouMirror
 
-## Getting Started
+**Before you buy, ask the mirror. It reads your skin today, tries the product on you, and tells you to buy, skip or swap, with reasons.**
 
-First, run the development server:
+[How it works](#how-it-works) · [Quickstart](#quickstart) · [Skin tone test](research/skin-tone-test.md) · [YouCam API](https://yce.makeupar.com/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How it works
+
+```
+product + one selfie
+   │
+   ▼
+photo check ─▶ skin tone ─▶ skin scan ─▶ try-on ─▶ compare ─▶ verdict
+ (local)      (YouCam)     (YouCam)     (YouCam)   (alternatives    buy / skip / swap
+                                                    tried on too)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Pick a real foundation or lipstick shade from 8,468 catalogue shades, or paste a garment link.
+2. Take one selfie. Blurry or too-small photos are stopped before any YouCam units are spent.
+3. Skin Tone Analysis measures your tone and undertone. Skin Analysis checks today's skin.
+4. YouCam tries the exact product on you.
+5. The mirror says buy, skip or try this instead, with reasons tied to the scan, and shows two closer shades tried on beside it.
+6. On a breakout day it raises coverage and adds a skincare step. A garment try-on that comes back unchanged is retried once, then called out instead of shown as a result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quickstart
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+git clone https://github.com/fozagtx/YouMirror && cd YouMirror
+npm install
+echo "YOUCAM_API_KEY=your_key" > .env.local
+npm run dev
+```
 
-## Learn More
+Open http://localhost:3000. Tests: `npm test`.
 
-To learn more about Next.js, take a look at the following resources:
+## Purpose
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Part | What it does |
+| --- | --- |
+| `lib/agent.ts` | The agent loop, streamed step by step to the page |
+| `lib/verdict.ts` | Buy, skip or swap from scan results and shade distance |
+| `lib/youcam.ts` | YouCam upload, task and polling client |
+| `lib/check.ts` | Photo checks and unchanged try-on detection |
+| `data/catalog.json` | Real shades from The Pudding and Makeup API (`npm run catalog`) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| YouCam API | Used for |
+| --- | --- |
+| Skin Tone Analysis | Measured tone, undertone, face quality |
+| Skin Analysis | Acne, redness, oiliness, moisture, texture, radiance |
+| Makeup VTO | Foundation and lipstick try-on |
+| Clothes VTO | Garment try-on |
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Setting | Where |
+| --- | --- |
+| `YOUCAM_API_KEY` | `.env.local`, or the Render dashboard |

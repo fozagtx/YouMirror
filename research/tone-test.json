@@ -1,0 +1,228 @@
+[
+  {
+    "photo": "sample1.jpg",
+    "light": "as shot",
+    "skin": "#bc9c86",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "sample1.jpg",
+    "light": "dim (-45%)",
+    "skin": "#bc9a83",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "sample1.jpg",
+    "light": "warm tungsten",
+    "skin": "#c09d87",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "sample_Image_7_fa28b2618a.jpg",
+    "light": "as shot",
+    "skin": "#b38e73",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "sample_Image_7_fa28b2618a.jpg",
+    "light": "dim (-45%)",
+    "skin": "#b79275",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "c_Sunshine_Rosman_headshot_2023.jpg",
+    "light": "as shot",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_position_too_small"
+  },
+  {
+    "photo": "c_Sunshine_Rosman_headshot_2023.jpg",
+    "light": "dim (-45%)",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_position_too_small"
+  },
+  {
+    "photo": "c_Linda_Osifo.jpg",
+    "light": "as shot",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_position_too_small"
+  },
+  {
+    "photo": "c_Linda_Osifo.jpg",
+    "light": "dim (-45%)",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_position_too_small"
+  },
+  {
+    "photo": "c_Asamoah_Davies_%28Official_Ghana_Boy%29.jpg",
+    "light": "as shot",
+    "skin": "#654733",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "c_Asamoah_Davies_%28Official_Ghana_Boy%29.jpg",
+    "light": "dim (-45%)",
+    "skin": "#6e4b33",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "subject_c.jpg",
+    "light": "as shot",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_leftward"
+  },
+  {
+    "photo": "subject_c.jpg",
+    "light": "dim (-45%)",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_leftward"
+  },
+  {
+    "photo": "subject_c.jpg",
+    "light": "warm tungsten",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_leftward"
+  },
+  {
+    "photo": "subject_d.jpg",
+    "light": "as shot",
+    "skin": "#806149",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "subject_d.jpg",
+    "light": "dim (-45%)",
+    "skin": "#825e43",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "subject_d.jpg",
+    "light": "warm tungsten",
+    "skin": "#816049",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "subject_e.jpg",
+    "light": "as shot",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_upward"
+  },
+  {
+    "photo": "subject_e.jpg",
+    "light": "dim (-45%)",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_upward"
+  },
+  {
+    "photo": "subject_e.jpg",
+    "light": "warm tungsten",
+    "skin": null,
+    "quality": null,
+    "error": "error_face_angle_upward"
+  },
+  {
+    "photo": "sample_Image_7_fa28b2618a.jpg",
+    "light": "warm tungsten",
+    "skin": "#b89479",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  },
+  {
+    "photo": "c_Asamoah_Davies_%28Official_Ghana_Boy%29.jpg",
+    "light": "warm tungsten",
+    "skin": "#684a37",
+    "quality": {
+      "has_face": true,
+      "area": "good",
+      "frontal": "good",
+      "lighting": "good",
+      "faceangle": "good"
+    },
+    "error": null
+  }
+]

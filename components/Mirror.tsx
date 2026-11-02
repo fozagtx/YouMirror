@@ -221,7 +221,7 @@ export default function Mirror({ shadeCount }: { shadeCount: number }) {
       <div className="ask">
         <button className="solid big" disabled={!ready} onClick={ask}>{running ? "The mirror is thinking" : "Ask the mirror"}</button>
         {!product && <span>Pick a product first.</span>}
-        {product && !photo && <span>Now take a selfie.</span>}
+        {product && !photo && <span>{product.kind === "garment" ? "Now take a waist-up photo, face to the camera." : "Now take a selfie."}</span>}
       </div>
 
       {(running || Object.keys(steps).length > 0) && (
