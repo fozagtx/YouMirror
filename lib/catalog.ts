@@ -1,4 +1,5 @@
 import data from "@/data/catalog.json";
+import lineImages from "@/data/line-images.json";
 import { deltaE } from "@/lib/color";
 import type { Kind, Product } from "@/lib/types";
 
@@ -35,3 +36,24 @@ export const catalogSize = () => ({
   foundation: catalog.filter((p) => p.kind === "foundation").length,
   lipstick: catalog.filter((p) => p.kind === "lipstick").length,
 });
+
+export type Line = { id: string; kind: Kind; brand: string; name: string; image: string | null; price: string | null; shades: number; swatches: string[] };
+
+const lines: Line[] = (() => {
+  const map = new Map<string, Line>();
+  for (const p of catalog) {
+    const key = `${p.kind}:${p.line}`;
+    let l = map.get(key);
+    if (!l) map.set(key, (l = { id: p.id, kind: p.kind, brand: p.brand, name: p.name, image: (lineImages as Record<string, string | null>)[key] ?? null, price: p.price ?? null, shades: 0, swatches: [] }));
+    l.shades++;
+    if (p.hex && l.swatches.length < 8) l.swatches.push(p.hex);
+  }
+  return [...map.values()].sort((a, b) => b.shades - a.shades);
+})();
+
+export const linesWithPhotos = (kind: Kind, limit: number) => lines.filter((l) => l.kind === kind && l.image).slice(0, limit);
+
+export function listLines(query: string, kind: Kind, limit = 24): Line[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return lines.filter((l) => l.kind === kind && words.every((w) => `${l.brand} ${l.name}`.toLowerCase().includes(w))).slice(0, limit);
+}

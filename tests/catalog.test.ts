@@ -23,3 +23,25 @@ describe("catalog", () => {
     expect(getProduct("nope")).toBeUndefined();
   });
 });
+
+describe("product lines", () => {
+  it("groups shades into real product lines with an image and shade count", async () => {
+    const { listLines } = await import("@/lib/catalog");
+    const lines = listLines("fenty pro filt", "foundation", 10);
+    expect(lines.length).toBeGreaterThan(0);
+    const l = lines[0];
+    expect(l.brand.toLowerCase()).toContain("fenty");
+    expect(l.shades).toBeGreaterThan(10);
+    expect(l.image).toMatch(/^https:\/\//);
+    expect(l.swatches.length).toBeLessThanOrEqual(8);
+    expect(new Set(lines.map((x) => x.id)).size).toBe(lines.length);
+  });
+
+  it("lists lines with the widest shade ranges first when there is no search", async () => {
+    const { listLines } = await import("@/lib/catalog");
+    const lines = listLines("", "lipstick", 12);
+    expect(lines).toHaveLength(12);
+    expect(lines.every((l) => l.kind === "lipstick")).toBe(true);
+    for (let i = 1; i < lines.length; i++) expect(lines[i - 1].shades).toBeGreaterThanOrEqual(lines[i].shades);
+  });
+});
